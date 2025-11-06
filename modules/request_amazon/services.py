@@ -9,6 +9,11 @@ from typing import Optional
 
 import httpx
 
+try:
+    from httpx_socks import AsyncProxyTransport
+except ImportError:
+    AsyncProxyTransport = None
+
 from utils.random_useragent import get_random_user_agent
 
 
@@ -35,27 +40,21 @@ def parse_cookies(cookie_string: Optional[str]) -> dict:
     return cookies
 
 
-def parse_proxy(proxy_string: Optional[str]) -> Optional[dict]:
+def parse_proxy(proxy_string: Optional[str]) -> Optional[str]:
     """
-    Parse proxy string into httpx-compatible proxy dictionary.
+    Parse and normalize proxy string.
 
     Args:
         proxy_string: Proxy URL (e.g., "socks5://user:pass@host:port")
 
     Returns:
-        Dictionary with "http://" and "https://" keys, or None if no proxy
+        Normalized proxy string or None if no proxy
     """
     if not proxy_string:
         return None
 
     # Remove trailing slash if present
-    proxy_string = proxy_string.rstrip("/")
-
-    # Return dict with both http and https using the same proxy
-    return {
-        "http://": proxy_string,
-        "https://": proxy_string,
-    }
+    return proxy_string.rstrip("/")
 
 
 async def fetch_amazon_page(
@@ -105,22 +104,49 @@ async def fetch_amazon_page(
     cookies_dict = parse_cookies(cookies) if cookies else {}
 
     # Parse proxy if provided
-    proxies_dict = parse_proxy(proxy)
+    proxy_url = parse_proxy(proxy)
+
+    # Configure transport for SOCKS5 proxy if needed
+    transport = None
+    if proxy_url and AsyncProxyTransport:
+        # Check if it's a SOCKS5 proxy
+        if proxy_url.startswith("socks5://"):
+            transport = AsyncProxyTransport.from_url(proxy_url)
+        # For HTTP/HTTPS proxy, httpx supports it natively
+        elif proxy_url.startswith(("http://", "https://")):
+            # httpx supports HTTP proxy natively via proxy parameter
+            pass
 
     for attempt in range(max_retries):
         try:
-            async with httpx.AsyncClient(
-                timeout=timeout,
-                follow_redirects=True,
-                verify=False,
-                http2=True,
-                proxies=proxies_dict,
-            ) as client:
+            # Configure client with or without proxy
+            client_kwargs = {
+                "timeout": timeout,
+                "follow_redirects": True,
+                "verify": False,
+                "http2": True,
+            }
+
+            # Add transport if SOCKS5 proxy is used
+            if transport:
+                client_kwargs["transport"] = transport
+
+            async with httpx.AsyncClient(**client_kwargs) as client:
                 # Add small delay between retries (except first attempt)
                 if attempt > 0:
                     await asyncio.sleep(2 ** attempt)  # Exponential backoff
 
-                response = await client.get(url, headers=headers, cookies=cookies_dict)
+                # Prepare request kwargs
+                request_kwargs = {
+                    "headers": headers,
+                    "cookies": cookies_dict,
+                }
+
+                # Add HTTP/HTTPS proxy if provided (not SOCKS5)
+                if proxy_url and not proxy_url.startswith("socks5://"):
+                    request_kwargs["proxy"] = proxy_url
+
+                response = await client.get(url, **request_kwargs)
 
                 # Retry on 503 Service Unavailable
                 if response.status_code == 503:

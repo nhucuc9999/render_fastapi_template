@@ -22,12 +22,8 @@ Or simply click:
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/render-examples/fastapi)
 
-## Thanks
-
-Thanks to [Harish](https://harishgarg.com) for the [inspiration to create a FastAPI quickstart for Render](https://twitter.com/harishkgarg/status/1435084018677010434) and for some sample code!
-
 Provide the following values during service creation:
 Setting Value
 Language Python 3
 Build Command pip install -r requirements.txt
-Start Command uvicorn main:app --host 0.0.0.0 --port $PORT
+Start Command uvicorn main:app --host 0.0.0.0 --reload --port $PORT
