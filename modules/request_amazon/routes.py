@@ -16,11 +16,13 @@ async def fetch_page(payload: RequestAmazonInput) -> RequestAmazonResponse:
     Fetch Amazon page content.
 
     Args:
-        payload: Request body containing the Amazon URL
+        payload: Request body containing the Amazon URL, optional cookies, and optional proxy
 
     Returns:
         RequestAmazonResponse with page source or error message
     """
-    result = await fetch_amazon_page(str(payload.url))
+    result = await fetch_amazon_page(
+        url=str(payload.url), cookies=payload.cookies, proxy=payload.proxy
+    )
     return RequestAmazonResponse(**result)
 
