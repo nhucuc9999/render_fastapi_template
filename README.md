@@ -12,9 +12,9 @@ See https://render.com/docs/deploy-fastapi or follow the steps below:
 4. Render will automatically detect that you are deploying a Python service and use `pip` to download the dependencies.
 5. Specify the following as the Start Command.
 
-    ```shell
-    uvicorn main:app --host 0.0.0.0 --port $PORT
-    ```
+   ```shell
+   uvicorn main:app --host 0.0.0.0 --port $PORT
+   ```
 
 6. Click Create Web Service.
 
@@ -25,3 +25,9 @@ Or simply click:
 ## Thanks
 
 Thanks to [Harish](https://harishgarg.com) for the [inspiration to create a FastAPI quickstart for Render](https://twitter.com/harishkgarg/status/1435084018677010434) and for some sample code!
+
+Provide the following values during service creation:
+Setting Value
+Language Python 3
+Build Command pip install -r requirements.txt
+Start Command uvicorn main:app --host 0.0.0.0 --port $PORT

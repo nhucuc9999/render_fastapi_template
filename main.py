@@ -2,7 +2,11 @@ from typing import Optional
 
 from fastapi import FastAPI, Response
 
+from modules.request_amazon.routes import router as request_amazon_router
+
 app = FastAPI()
+
+app.include_router(request_amazon_router)
 
 
 @app.get("/")
